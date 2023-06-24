@@ -6,6 +6,9 @@ const int d2 = 4; // sw2 kitchen //NC
 const int d5 = 14; //sw1 tank //NO
 const int d6=12; //timer lights
 int numberOfClients=0;
+String latestCommand="";
+String lightsCommand="";
+
 AsyncWebServer server(80);
 AsyncWebSocket ws("/");
 void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type,
@@ -20,6 +23,7 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
       Serial.println(s); 
       if(s=="K1")
       {
+        latestCommand=s;
         Serial.println("Kitchen on"); 
          digitalWrite(d2, HIGH); 
          digitalWrite(d5, HIGH);  
@@ -28,6 +32,7 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
       }
       else if(s=="K0")
       {
+        latestCommand=s;
           Serial.println("Kitchen off"); 
        digitalWrite(d5, LOW);  
          digitalWrite(d2, LOW);
@@ -36,12 +41,14 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
       }
       else if(s=="L1")
       {
+        lightsCommand=s;
           Serial.println("Lights on"); 
        digitalWrite(d6, HIGH);
          ws.textAll(s); 
       }
       else if(s=="L0")
       {
+      lightsCommand=s;
           Serial.println("Lights off"); 
        digitalWrite(d6, LOW);
          ws.textAll(s); 
@@ -49,6 +56,7 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
      
         else if(s=="T1")
       {
+        latestCommand=s;
         Serial.println("Tank on"); 
        digitalWrite(d5, LOW); //tank 
         digitalWrite(d2, LOW); //kitchen 
@@ -57,6 +65,7 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
       }
       else if(s=="T0")
       {
+        latestCommand=s;
         Serial.println("Tank off"); 
        digitalWrite(d5, LOW); //tank 
         digitalWrite(d2, LOW); //kitchen 
@@ -66,9 +75,10 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
               }
                switch (type) {
     case WS_EVT_CONNECT:
+      client->text(latestCommand);
       Serial.printf("WebSocket client #%u connected from %s\n", client->id(), client->remoteIP().toString().c_str());
-      client->text("Welcome damn");
       numberOfClients=numberOfClients+1;
+      client->text(lightsCommand);
       Serial.println("Number of clients "+String(numberOfClients));
       ws.textAll("N"+String(numberOfClients));
       break;
