@@ -1,8 +1,7 @@
 #include <ESP8266WiFi.h>
 WiFiServer server(8080);
 WiFiClient client;
-int SSR = 0;  //d3
-int LED = 2; //d4
+int SSR = 14;  //d5
 void connectt()
 {
   
@@ -16,9 +15,7 @@ void connectt()
 
 void setup()
 {
-  pinMode(SSR, OUTPUT); 
-   pinMode(LED, OUTPUT);
-     digitalWrite(LED, HIGH); 
+  pinMode(SSR, OUTPUT);   
          digitalWrite(SSR, LOW);  
   Serial.begin(115200);
   Serial.println();
@@ -68,12 +65,10 @@ void loop()
       {
         Serial.println("LED ON===>>>>");
          digitalWrite(SSR, HIGH); 
-         digitalWrite(LED, HIGH); 
       }
       else if(ch=='a')
       {
-         Serial.println("LED OFF===>>>>");
-           digitalWrite(LED, LOW); 
+         Serial.println("LED OFF===>>>>"); 
          digitalWrite(SSR, LOW); 
       }
       Serial.println(ch);

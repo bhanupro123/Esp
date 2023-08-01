@@ -1,79 +1,71 @@
+#include <ArduinoWebsockets.h>
 #include <ESP8266WiFi.h>
-#include <WebSocketClient.h>
+// WiFi.begin("ZTE_2.4G_bP7u3G","zu525b3G");
+const char* ssid = "ZTE_2.4G_bP7u3G"; //Enter SSID
+const char* password = "zu525b3G"; //Enter Password
+const char* websockets_server = "ws://192.168.1.3:8080"; //server adress and port
+bool isConnected=false;
+using namespace websockets;
 
-const char* ssid     = "Lohitha 2nd floor 2G"
-const char* password = "lohitha123";
-char path[] = "/";
-char host[] = "ws://192.168.29.87:8080";
-  
-WebSocketClient webSocketClient;
-
-// Use WiFiClient class to create TCP connections
-WiFiClient client;
-
-void setup() {
-  Serial.begin(115200);
-  delay(10);
-
-  // We start by connecting to a WiFi network
-
-  Serial.println();
-  Serial.println();
-  Serial.print("Connecting to ");
-  Serial.println(ssid);
-  
-  WiFi.begin(ssid, password);
-  
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-
-  Serial.println("");
-  Serial.println("WiFi connected");  
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());
-
-  delay(5000);
-  
-
-  // Connect to the websocket server
-  if (client.connect("echo.websocket.org", 80)) {
-    Serial.println("Connected");
-  } else {
-    Serial.println("Connection failed.");
-    while(1) {
-      // Hang on failure
-    }
-  }
-
-  // Handshake with the server
-  webSocketClient.path = path;
-  webSocketClient.host = host;
-  if (webSocketClient.handshake(client)) {
-    Serial.println("Handshake successful");
-  } else {
-    Serial.println("Handshake failed.");
-    while(1) {
-      Serial.println("Handshake failed.");
-      // Hang on failure
-    }  
-  }
-
+void onMessageCallback(WebsocketsMessage message) {
+    Serial.print("Got Message: ");
+    Serial.println(message.data());
 }
 
+void onEventsCallback(WebsocketsEvent event, String data) {
+    if(event == WebsocketsEvent::ConnectionOpened) {
+      isConnected=true;
+        Serial.println("Connnection Opened");
+    } else if(event == WebsocketsEvent::ConnectionClosed) {
+      isConnected=false;
+        Serial.println("Connnection Closed");
+    } else if(event == WebsocketsEvent::GotPing) {
+        Serial.println("Got a Ping!");
+    } else if(event == WebsocketsEvent::GotPong) {
+        Serial.println("Got a Pong!");
+    }
+}
+
+WebsocketsClient client;
+void setup() {
+    Serial.begin(115200);
+    // Connect to wifi
+    WiFi.begin(ssid, password);
+
+    // Wait some time to connect to wifi
+    for(int i = 0; i < 10 && WiFi.status() != WL_CONNECTED; i++) {
+        Serial.println("-");
+        delay(1000);
+    }
+
+    // Setup Callbacks
+    client.onMessage(onMessageCallback);
+    client.onEvent(onEventsCallback);
+    
+    // Connect to server
+    client.connect(websockets_server);
+
+    // Send a message
+    client.send("Hi Server!");
+    // Send a ping
+    client.ping();
+}
 
 void loop() {
-  String data;
+  if(isConnected)
+  {
+      client.poll();
+    while (Serial.available() > 0)
+ {
+  String s=Serial.readString();
+  if(s.length()>0)
+  client.send(s);     
+ }
+  }
+  else{
+    client.connect(websockets_server);
+    delay(1000);
+    Serial.println("Retrying....");
+  }
 
-  if (client.connected()) {
-   webSocketClient.getData();
-    if (data.length() > 0) {
-      Serial.print("Received data: ");
-      Serial.println(data);
-    }
-    webSocketClient.sendData(data);
-  }   
-  delay(3000);
-  
 }

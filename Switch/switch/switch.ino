@@ -1,10 +1,7 @@
-//reference 
-//https://randomnerdtutorials.com/esp8266-nodemcu-websocket-server-arduino/
-
-
 #include <ESP8266WiFi.h>
 #include <ESPAsyncTCP.h>
 #include <ESPAsyncWebServer.h>
+const int d0=16;
 const int d1 = 5; // motor
 const int d2 = 4; // sw2 kitchen //NC
 const int d5 = 14; //sw1 tank //NO
@@ -116,6 +113,7 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
 }
 void setup()
 {
+  pinMode(d0,INPUT);
   pinMode(d1, OUTPUT);
   digitalWrite(d1, LOW);
    pinMode(d2, OUTPUT);
@@ -138,33 +136,9 @@ void setup()
  
 void loop()
 {
-
+int button=digitalRead(d0); 
+digitalWrite(d1,digitalRead(d0));
  
-//< 500 is too wet
-//500-750 is the target range
-//> 750 is dry enough to be watered
+ 
   
-  if(isWatered)
-  {
-    delay(3000);
-    digitalWrite(d1, LOW);
-         isWatered=false;
-         ws.textAll("W0");         
-  }
-       moisture_value= analogRead(moisture_Pin); 
-  
-    if(moisture_value<500){
-        isWatered=false;
-    }
-    if(moisture_value>800&&!isWatered)
-    {
-      isWatered=true; 
-       digitalWrite(d1, HIGH);
-       delay(3000);
-        digitalWrite(d1, LOW);
-    }
-    
-     ws.textAll("W"+String(moisture_value));
-       Serial.println(moisture_value); 
-  delay(500); 
 }
