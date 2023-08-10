@@ -1,18 +1,22 @@
-#include "RTClib.h"
+#include <Ticker.h>
 #include <ESP8266WiFi.h>
 WiFiServer server(8080);
-WiFiClient client;
-RTC_DS1307 rtc;
-
+WiFiClient client; 
+Ticker blinker;
 int SSR = 14;  //d5
-int SB = 12;  //d6
-int sbMode=0;
-int LDR=A0;
-String timeStamp="";
-bool isClient = false; 
+int SB = 12;  //d6  
+int LDR = A0; 
+int timeOut =  60 * 5;
+int statemode = 0; //0 ldr, 1= switch 2=client
+
+void changeState() {
+  Serial.println("Time Out");
+  statemode = 0;
+  blinker.detach();
+}
 void connectt()
 {
-  
+
   client = server.available();
   if (client)
   {
@@ -23,11 +27,10 @@ void connectt()
 
 void setup()
 {
-  
-  pinMode(SSR, OUTPUT);   
-  pinMode(LDR, INPUT);   
+  pinMode(SSR, OUTPUT);
+  pinMode(LDR, INPUT);
   digitalWrite(SSR, LOW);
-    pinMode(SB, INPUT);  
+  pinMode(SB, INPUT);
   Serial.begin(115200);
   Serial.println();
   server.begin();
@@ -37,41 +40,66 @@ void setup()
   Serial.print("AP IP address: ");
   Serial.println(myIP);
   connectt();
-   if (! rtc.begin()) {
-    Serial.println("Couldn't find RTC");
-    Serial.flush();
-    while (1) delay(10);
-  }
-
-   //rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+ 
+}
+void startTimer()
+{
+  blinker.detach();
+  Serial.println("Time Started");
+  blinker.attach(timeOut, changeState);
 }
 
- 
 void loop()
 {
-  int sensorValue = analogRead(LDR); 
-sbMode=digitalRead(SB);
-if(!isClient)
-{
-     digitalWrite(SSR, sensorValue>800?HIGH:LOW);
-}
-    DateTime now = rtc.now();
-    if(sbMode==LOW)
-  { 
-         isClient=!isClient;
-       int temp=digitalRead(SSR);
-       if(temp==LOW)
-       {
-        isClient=true;
-        digitalWrite(SSR, HIGH);
-        delay(500);
-       }
-       else{
-          isClient=false;
-        digitalWrite(SSR, LOW);
-        delay(500);
-       }
+  if (client)
+  {
+    while (client.available() > 0)
+    {
+      char ch=client.read();
+      Serial.println(ch); 
+      if(ch=='a')
+      {
+//        Serial.println("matched with aaaa");
+        digitalWrite(SSR,LOW);
+      }
+      else if(ch=='A')
+      {
+//        Serial.println("matched with AAAA");
+      digitalWrite(SSR,HIGH);
+      }
+      startTimer();
+      statemode = 2;
+    }
   }
+  else connectt();
+  if (statemode == 0)
+  {
+    int sensorValue = analogRead(LDR);
+    if (sensorValue<=760)
+    { 
+      digitalWrite(SSR, LOW);
+    }
+    else if(sensorValue>=860)
+    {
+      digitalWrite(SSR, HIGH);
+    }
+    Serial.println(String(sensorValue));
+  }
+  if (statemode == 1 || statemode == 0)
+  { 
+    if (digitalRead(SB) == LOW)
+    {
+      digitalWrite(SSR, !digitalRead(SSR));
+      delay(1500);
+      statemode = 1;
+      startTimer();
+    }
+  }
+}
+
+
+
+
 //    if (now.year() < 2030&&now.year() > 2000)
 //  {
 //    if(!isClient)
@@ -86,49 +114,6 @@ if(!isClient)
 //    }
 //    }
 //  }
-  
-     
-    timeStamp=(String((now.year()))+"/"+String((now.month()))+"/"+String((now.day()))+" "+String((now.hour()))+":"+String((now.minute()))+":"+String((now.second()))+" - "+String(sensorValue));
-  Serial.println(timeStamp); 
-      while (Serial.available() > 0)
-      {
-        char ch = Serial.read();
-        client.write(ch);
-        if(ch=='A')
-      {
-        Serial.println("LED ON===>>>>");
-         digitalWrite(SSR, HIGH);  
-      }
-      else if(ch=='a')
-      {
-         Serial.println("LED OFF===>>>>"); 
-         digitalWrite(SSR, LOW); 
-      }
-      Serial.println(ch);
-      }
-  if (!client)
-  {
-    connectt();
-  }
-  else
-  { 
-   client.println(timeStamp);
-    while (client.available()>0)
-    {
-      char ch = client.read();
-      if(ch=='A')
-      {
-        Serial.println("LED ON===>>>>");
-         digitalWrite(SSR, HIGH); 
-      }
-      else if(ch=='a')
-      {
-         Serial.println("LED OFF===>>>>"); 
-         digitalWrite(SSR, LOW); 
-      }
-      Serial.println(ch); 
-    }
-    
-  }
-  delay(500);
-}
+
+
+ 
