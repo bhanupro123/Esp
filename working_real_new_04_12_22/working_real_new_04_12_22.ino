@@ -6,7 +6,7 @@ Ticker blinker;
 int SSR = 14;  //d5
 int SB = 12;  //d6  
 int LDR = A0; 
-int timeOut =  60 * 5;
+int timeOut =  60 * 10;
 int statemode = 0; //0 ldr, 1= switch 2=client
 
 void changeState() {

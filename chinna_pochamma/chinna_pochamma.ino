@@ -31,7 +31,7 @@ void setup () {
     Serial.println("Couldn't find RTC");
     while (1);
   }
-  //    DS1307_RTC.adjust(DateTime(F(__DATE__), F(__TIME__)));
+      //DS1307_RTC.adjust(DateTime(F(__DATE__), F(__TIME__)));
   Serial.println();
   server.begin();
   Serial.print("Setting soft-AP ... ");
@@ -54,6 +54,10 @@ void performAction(char ch) {
   }
 }
 void loop () {
+   if (!DS1307_RTC.begin()) {
+    Serial.println("Couldn't find RTC");
+    while (1);
+  }
   DateTime now = DS1307_RTC.now();
   if (now.year() > 2000 && !isClient)
   {
