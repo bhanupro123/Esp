@@ -1,12 +1,24 @@
-#include "RTClib.h"
+#include <Ticker.h>
 #include <ESP8266WiFi.h>
+#include "RTClib.h"
 WiFiServer server(8080);
 WiFiClient client;
-RTC_DS1307 DS1307_RTC;
-int SSR = 5;  //d5
-bool isClient = false;
+RTC_DS1307 rtc;
+Ticker blinker;
+int SSR = 14;  //d5
+int SB = 12;  //d6
+int LDR = A0;
+int timeOut =  60 * 10;
+int statemode = 0; //0 ldr, 1= switch 2=client
+String timeStamp="";
+void changeState() {
+  Serial.println("Time Out");
+  statemode = 0;
+  blinker.detach();
+}
 void connectt()
 {
+
   client = server.available();
   if (client)
   {
@@ -15,23 +27,13 @@ void connectt()
   }
 }
 
-
-char Week_days[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
-
-void setup () {
+void setup()
+{
   pinMode(SSR, OUTPUT);
+  pinMode(LDR, INPUT);
   digitalWrite(SSR, LOW);
+  pinMode(SB, INPUT);
   Serial.begin(115200);
-
-#ifndef ESP8266
-  while (!Serial); // wait for serial port to connect. Needed for native USB
-#endif
-
-  if (!DS1307_RTC.begin()) {
-    Serial.println("Couldn't find RTC");
-    while (1);
-  }
-      //DS1307_RTC.adjust(DateTime(F(__DATE__), F(__TIME__)));
   Serial.println();
   server.begin();
   Serial.print("Setting soft-AP ... ");
@@ -40,64 +42,63 @@ void setup () {
   Serial.print("AP IP address: ");
   Serial.println(myIP);
   connectt();
+
 }
-void performAction(char ch) {
-  if (ch == '1')
-  {
-    isClient = true;
-    digitalWrite(SSR, HIGH);
-  }
-  else if (ch == '0')
-  {
-    isClient = false;
-    digitalWrite(SSR, LOW);
-  }
+void startTimer()
+{
+  blinker.detach();
+  Serial.println("Time Started");
+  blinker.attach(timeOut, changeState);
 }
-void loop () {
-   if (!DS1307_RTC.begin()) {
+
+void loop()
+{
+  while (!rtc.begin()) {
+    if (client)
+      client.write("Couldn't find RTC");
+    else {
+      connectt();
+    }
     Serial.println("Couldn't find RTC");
-    while (1);
+    delay(1000);
   }
-  DateTime now = DS1307_RTC.now();
-  if (now.year() > 2000 && !isClient)
-  {
-    if (now.hour() >= 18 || (now.hour() <= 6))
-    {
-      digitalWrite(SSR, HIGH);
-    }
-    else
-    {
-      digitalWrite(SSR, LOW);
-    }
-  }
-  Serial.print(now.year(), DEC);
-  Serial.print('/');
-  Serial.print(now.month(), DEC);
-  Serial.print('/');
-  Serial.print(now.day(), DEC);
-  Serial.print(" ");
-  Serial.print(now.hour(), DEC);
-  Serial.print(':');
-  Serial.print(now.minute(), DEC);
-  Serial.print(':');
-  Serial.print(now.second(), DEC);
-  Serial.println();
-  delay(1000);
-  while (Serial.available() > 0)
-  {
-    char ch = Serial.read();
-    performAction(ch);
-  }
-  if (!client)
-  {
-    connectt();
-  }
-  else
+  DateTime now = rtc.now();
+  String timeStamp=(String((now.year()))+"/"+String((now.month()))+"/"+String((now.day()))+" "+String((now.hour()))+":"+String((now.minute()))+":"+String((now.second())));
+ Serial.println(timeStamp); 
+  if (client)
   {
     while (client.available() > 0)
     {
       char ch = client.read();
-      performAction(ch);
+      Serial.println(ch);
+      if (ch == 'a')
+      { 
+        digitalWrite(SSR, LOW);
+      }
+      else if (ch == 'A')
+      { 
+        digitalWrite(SSR, HIGH);
+      }
+      startTimer();
+      statemode = 2;
     }
   }
+  else connectt();
+
+  if (statemode == 0 && now.year() < 2030 && now.year() > 2000)
+  {
+    digitalWrite(SSR, (now.hour() >= 18 || (now.hour() <= 6)) ? HIGH : LOW);
+  }
+
+  if (statemode == 1 )
+  {
+    if (digitalRead(SB) == LOW)
+    {
+      digitalWrite(SSR, !digitalRead(SSR));
+      delay(1500);
+      statemode = 1;
+      startTimer();
+    }
+  }
+ 
 }

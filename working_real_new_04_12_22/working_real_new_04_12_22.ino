@@ -95,6 +95,7 @@ void loop()
       startTimer();
     }
   }
+  delay(500);
 }
 
 
