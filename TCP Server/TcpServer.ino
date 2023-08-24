@@ -12,8 +12,6 @@ void connectt()
     client.write("Well Come Back");
   }
 }
-
-
  
 void setup () {
   pinMode(SSR, OUTPUT);
@@ -22,10 +20,8 @@ void setup () {
 
 #ifndef ESP8266
   while (!Serial); // wait for serial port to connect. Needed for native USB
-#endif
+#endif 
 
- 
-      //DS1307_RTC.adjust(DateTime(F(__DATE__), F(__TIME__)));
   Serial.println();
   server.begin();
   Serial.print("Setting soft-AP ... ");
