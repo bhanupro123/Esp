@@ -5,6 +5,8 @@ int left = 5;  //d1
 int right = 4;  //d2
 int front = 14;  //d5
 int back = 12;  //d6
+int light = 13; //d7
+int horn = 2; //d4
 void connectt()
 {
   client = server.available();
@@ -16,14 +18,24 @@ void connectt()
 }
 
 void setup () {
+  pinMode(horn, OUTPUT);
+  digitalWrite(horn, HIGH);
+
   pinMode(left, OUTPUT);
   digitalWrite(left, LOW);
+
   pinMode(right, OUTPUT);
   digitalWrite(right, LOW);
+
   pinMode(front, OUTPUT);
   digitalWrite(front, LOW);
+
   pinMode(back, OUTPUT);
   digitalWrite(back, LOW);
+
+  pinMode(light, OUTPUT);
+  digitalWrite(light, LOW);
+
   Serial.begin(115200);
 
 #ifndef ESP8266
@@ -42,7 +54,7 @@ void setup () {
 void performAction(String ch) {
   Serial.println(ch);
   if (ch == "W")
-  { 
+  {
     digitalWrite(back, LOW);
     digitalWrite(front, HIGH);
   }
@@ -77,14 +89,29 @@ void performAction(String ch) {
   {
     digitalWrite(right, LOW);
   }
-  
+  else if (ch == "L")
+  {
+    digitalWrite(light, HIGH);
+  }
+  else if (ch == "l")
+  {
+    digitalWrite(light, LOW);
+  }
+  else if (ch == "B")
+  {
+   digitalWrite(horn, LOW);  
+  }
+  else if (ch == "b")
+  {
+   digitalWrite(horn, HIGH);
+  }
 }
 void loop () {
 
   while (Serial.available() > 0)
   {
-    char ch=Serial.read();
-    if(ch!= '\0' )
+    char ch = Serial.read();
+    if (ch != '\0' )
     {
       performAction(String(ch));
     }
@@ -96,11 +123,11 @@ void loop () {
   {
     while (client.available() > 0)
     {
-      char ch=client.read();
-       if(ch!= '\0' )
-    {
-      performAction(String(ch));
-    }
+      char ch = client.read();
+      if (ch != '\0' )
+      {
+        performAction(String(ch));
+      }
     }
   }
 }
