@@ -7,7 +7,10 @@ int front = 14;  //d5
 int back = 12;  //d6
 int light = 13; //d7
 int horn = 2; //d4
-bool isNeutral=true;
+int m1=110;
+int nPWM=125;
+bool isNeutral=false;
+int minStepSize=50; 
 void connectt()
 {
   client = server.available();
@@ -57,25 +60,34 @@ void setup () {
 void performAction(String ch) {
   Serial.println(ch);
   if (ch == "W")
-  {
-     digitalWrite(front, isNeutral?125:255);
-    analogWrite(back, LOW); 
+  { 
+    digitalWrite(front, LOW);
+    digitalWrite(back, LOW); 
+    if(isNeutral)
+     analogWrite(front, nPWM);
+     else 
+     analogWrite(front, 255);
   }
   else if (ch == "S")
   {
-  
-     analogWrite(back, isNeutral?125:255);
-    digitalWrite(front, LOW); 
+    digitalWrite(back, LOW);
+    digitalWrite(front, LOW);
+    if(isNeutral)
+     analogWrite(back, nPWM);
+     else 
+     analogWrite(back, 255); 
   }
   else if (ch == "A")
   {
+    digitalWrite(left, LOW);
     digitalWrite(right, LOW);
-     analogWrite(left, 110); 
+     analogWrite(left, m1);  
   }
   else if (ch == "D")
   {
+    digitalWrite(right, LOW);
     digitalWrite(left, LOW);
-     analogWrite(right, 110); 
+     analogWrite(right, m1);   
   }
   else if (ch == "w")
   {
@@ -88,10 +100,16 @@ void performAction(String ch) {
   else if (ch == "a")
   {
     digitalWrite(left, LOW);
+     analogWrite(right, m1); 
+    delay(minStepSize);
+    digitalWrite(right, LOW);
   }
   else if (ch == "d")
   {
     digitalWrite(right, LOW);
+  analogWrite(left, m1); 
+    delay(minStepSize);
+    digitalWrite(left, LOW);
   }
   else if (ch == "L")
   {
