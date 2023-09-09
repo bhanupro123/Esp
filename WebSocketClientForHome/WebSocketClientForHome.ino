@@ -1,19 +1,22 @@
 #include <ArduinoWebsockets.h>
 #include <ESP8266WiFi.h>
 // WiFi.begin("ZTE_2.4G_bP7u3G","zu525b3G");
-const char* ssid = "Tharun guvva"; //Enter SSID
-const char* password = "password@000"; //Enter Password
+const char* ssid = "bhanu"; //Enter SSID
+const char* password = "bhanu1234"; //Enter Password
 
 //const char* ssid = "Tharun guvva"; //Enter SSID
 //const char* password = "password@000"; //Enter Password
 
-const char* websockets_server = "ws://192.168.0.145:8080"; //server adress and port
+const char* websockets_server = "ws://192.168.1.7:8080"; //server adress and port
 bool isConnected = false;
 const int d1 = 5; // motor
 const int d2 = 4; // sw2 kitchen //NC
+const int d3 = 0;
+const int d4 = 2;
 const int d5 = 14; //sw1 tank //NO
 const int d6 = 12; //timer lights//12
-const String proType="#UGESP";
+const int d7 = 13;
+const String proType="#E0*";
 const String tankAlive=proType+"T1";
 const String motorTerminated=proType+"M0";
 const String kitchenAlive=proType+"K1"; 
@@ -69,12 +72,14 @@ void onMessageCallback(WebsocketsMessage message) {
 void onEventsCallback(WebsocketsEvent event, String data) {
   if (event == WebsocketsEvent::ConnectionOpened) {
     isConnected = true;
+    digitalWrite(d4,LOW);
     client.send(proType); 
     client.send(latestCommand);
     client.send(lightsCommand);
     Serial.println("Connnection Opened");
   } else if (event == WebsocketsEvent::ConnectionClosed) {
     isConnected = false;
+    digitalWrite(d4,HIGH);
     Serial.println("Connnection Closed");
   } else if (event == WebsocketsEvent::GotPing) {
     Serial.println("Got a Ping!");
@@ -92,6 +97,8 @@ void setup() {
   digitalWrite(d5, LOW);
   pinMode(d6, OUTPUT);
   digitalWrite(d6, LOW);
+   pinMode(d4, OUTPUT);
+  digitalWrite(d4, HIGH);
   Serial.begin(115200);
   // Connect to wifi
   WiFi.begin(ssid, password);
@@ -109,8 +116,7 @@ void setup() {
   // Connect to server
   client.connect(websockets_server);
 
-  // Send a message
-  client.send("Hi Server!");
+  // Send a message 
   // Send a ping
   client.ping();
 }
