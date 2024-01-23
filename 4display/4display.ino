@@ -5,7 +5,7 @@ const int DIO = 14; //Set the DIO pin connection to the display
 const int Speaker = 13;
 const int button = 5 ;
 int numCounter = 0;
-bool started = false;
+bool started = true;
 
 
 
