@@ -89,6 +89,8 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
 void setup() {
   pinMode(LED, OUTPUT);
   digitalWrite(LED, HIGH);
+   pinMode(motorRelay, OUTPUT);
+  digitalWrite(motorRelay, LOW);
   pinMode(motorLed, OUTPUT);
   digitalWrite(motorLed, LOW);
   pinMode(switchinput, INPUT);
@@ -157,8 +159,10 @@ void loop() {
   }
   if (motorstatus == "on") {
     digitalWrite(motorLed, HIGH);
+    digitalWrite(motorRelay, HIGH);
   } else {
     digitalWrite(motorLed, LOW);
+    digitalWrite(motorRelay, LOW);
   }
   // parse for a packet, and call onReceive with the result:
   if (inputDelay == 0) {
