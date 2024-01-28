@@ -27,7 +27,7 @@ AsyncWebSocket ws("/");
 
 const int csPin = 15;    // LoRa radio chip select
 const int resetPin = 16; // LoRa radio reset
-const int irqPin = 0;    // change for your board; must be a hardware interrupt pin
+const int irqPin = 12;    // change for your board; must be a hardware interrupt pin
 const int LED = 2;
 const int trigger = 0;
 String timestamp = "";
@@ -43,6 +43,7 @@ String autoStartMachine = "off";
 int address = 0;
 int addressAutoStart = 1;
 bool isTimerIsRunning = false;
+byte inputDelay=0;
 bool isTimerInititialized = true;
 void initWebSocket()
 {
@@ -60,34 +61,36 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
     {
       state = state + String(static_cast<char>(data[i]));
     }
-    Serial.println(state);
-    if (state == "M=on" && autoStartMachine != "M=on")
+    Serial.println(state+"/A "+autoStartMachine+"/M "+motorstatus);
+    if (state == "M=on" && motorstatus == "off")
     {
+      inputDelay=2;
       EEPROM.put(address, 1);
       EEPROM.commit();
       client->text(state);
-      motorstatus = state;
+      motorstatus = "on";
     }
-    else if (state == "M=off" && autoStartMachine != "M=off")
+    else if (state == "M=off" && motorstatus == "on")
     {
+            inputDelay=2;
       EEPROM.put(address, 0);
       EEPROM.commit();
       client->text(state);
-      motorstatus = state;
+      motorstatus = "off";
     }
-    else if (state == "A=on" && autoStartMachine != "A=on")
+    else if (state == "A=on" && autoStartMachine == "off")
     {
       EEPROM.put(addressAutoStart, 1);
       EEPROM.commit();
       client->text(state);
-      autoStartMachine = state;
+      autoStartMachine = "on";
     }
-    else if (state == "A=off" && autoStartMachine != "A=off")
+    else if (state == "A=off" && autoStartMachine == "on")
     {
       EEPROM.put(addressAutoStart, 0);
       EEPROM.commit();
       client->text(state);
-      autoStartMachine = state;
+      autoStartMachine = "off";
     }
     else if (state.endsWith("Z"))
     {
@@ -173,6 +176,7 @@ void setup()
   }
   else if (readId == 1)
   {
+    inputDelay=2;
     motorstatus = "on";
   }
   EEPROM.get(addressAutoStart, readId);
@@ -202,24 +206,31 @@ void loop()
     if (isTimerInititialized)
     {
       DateTime now = rtc.now();
-      if (now.isPM())
-        Serial.println("PM");
-      else
-        Serial.println("AM");
       timestamp = String(now.year(), DEC) + '/' + String(now.month(), DEC) + '/' + String(now.day(), DEC) + " T " + String(now.hour(), DEC) + ':' + String(now.minute(), DEC) + ':' + String(now.second(), DEC);
       Serial.println(timestamp);
       ws.textAll(timestamp);
     }
     sendMessage(motorstatus + "/" + autoStartMachine);
     lastSendTime = millis();        // timestamp the message
-    interval = random(1000) + 1000; // 2-3 seconds
+    interval = random(2000) + 1000; // 2-3 seconds
+     if(inputDelay!=0)
+    {
+      inputDelay = inputDelay + 2;
+    }
   }
   else
   {
     // display.clear();
   }
-  // parse for a packet, and call onReceive with the result:
-  onReceive(LoRa.parsePacket());
+   if(inputDelay==0)
+  {
+    onReceive(LoRa.parsePacket());
+  }
+  else if(inputDelay>=6)
+  {
+    onReceive(LoRa.parsePacket());
+  }
+  digitalWrite(trigger, motorstatus=="on"?HIGH:LOW);
 }
 
 void sendMessage(String outgoing)
@@ -241,7 +252,7 @@ void onReceive(int packetSize)
 {
   if (packetSize == 0)
     return; // if there no packet, return
-
+inputDelay=0;
   // read packet header bytes:
   int recipient = LoRa.read();       // recipient address
   byte sender = LoRa.read();         // sender address
@@ -276,23 +287,23 @@ void onReceive(int packetSize)
   // Serial.println("Message length: " + String(incomingLength));
   Serial.println("Message: " + incoming);
   Serial.println();
-  if (incoming == "mon" && motorstatus == "off")
+  if (incoming == "on" && motorstatus == "off")
   {
     Serial.println("Called inside");
-    ws.textAll("on");
+    ws.textAll("M=on");
     motorstatus = "on";
     EEPROM.put(address, 1);
     EEPROM.commit();
-    digitalWrite(trigger, LOW);
+     
   }
-  else if (incoming == "moff" && motorstatus == "on")
+  else if (incoming == "off" && motorstatus == "on")
   {
     Serial.println("Called inside");
-    ws.textAll("off");
+    ws.textAll("M=off");
     motorstatus = "off";
     EEPROM.put(address, 0);
     EEPROM.commit();
-    digitalWrite(trigger, HIGH);
+    
   }
   Serial.println();
 }
