@@ -188,7 +188,7 @@ void setup()
   {
     autoStartMachine = "on";
   }
-  if (!LoRa.begin(433E1))
+  if (!LoRa.begin(433E6))
   { // initialize ratio at 915 MHz
     Serial.println("LoRa init failed. Check your connections.");
     while (true)
